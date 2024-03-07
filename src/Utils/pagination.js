@@ -1,0 +1,12 @@
+export const paginationFunction = ({ page = 1, size = 2 }) => {
+  if (page < 1) page = 1;
+  if (size < 1) size = 2;
+  const limit = +size;
+  console.log(limit + "limit");
+  console.log(page + "page");
+
+  const skip = (+page - 1) * limit;
+  console.log(skip);
+  console.log(limit + "" + skip);
+  return { limit, skip };
+};

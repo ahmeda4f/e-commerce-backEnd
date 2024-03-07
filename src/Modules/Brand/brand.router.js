@@ -10,6 +10,7 @@ import {
   addBrand,
   deleteBrand,
   getAllBrands,
+  getAllBrandsFeatures,
   updateBrand,
 } from "./brand.controller.js";
 
@@ -37,6 +38,12 @@ router.delete(
   "/deleteBrand/:brandId",
   authorization([systemRoles.superAdmin, systemRoles.Admin]),
   expressAsyncHandler(deleteBrand)
+);
+
+router.get(
+  "/allBrandsFeatures",
+  authorization([systemRoles.superAdmin, systemRoles.Admin, systemRoles.User]),
+  expressAsyncHandler(getAllBrandsFeatures)
 );
 
 export default router;

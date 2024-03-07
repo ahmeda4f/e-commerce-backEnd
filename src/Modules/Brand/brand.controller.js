@@ -15,6 +15,7 @@ import Category from "../../../DB/Models/category.model.js";
 import { response } from "express";
 import { systemRoles } from "../../Utils/systemRoles.js";
 import Product from "../../../DB/Models/product.model.js";
+import { ApiFeatures } from "../../Utils/apiFeatures.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -204,4 +205,25 @@ export const deleteBrand = async (req, res) => {
   return res.status(200).json({
     message: "successfully deleted brand",
   });
+};
+
+export const getAllBrandsFeatures = async (req, res) => {
+  // Destructure query parameters
+  const { page, size, sort, ...searchOptions } = req.query;
+
+  // Apply pagination and filter based on search options
+  const apiFeatures = new ApiFeatures(req.query, Brand.find())
+    .pagination({
+      page,
+      size,
+    })
+    .filter(searchOptions)
+    .sort(sort);
+
+  // Log the page and size
+  console.log(page + "" + size + "getAll");
+
+  // Execute the query and return the brands
+  const brands = await apiFeatures.mongooseQuery;
+  return res.status(200).json({ brands });
 };

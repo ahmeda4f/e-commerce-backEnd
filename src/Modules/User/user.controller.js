@@ -171,3 +171,37 @@ export const updateUser = async (req, res) => {
       .json({ message: "User updated successfully", updatedUser });
   }
 };
+
+export const softDelete = async (req, res) => {
+  const user = await User.findOne({ _id: req.params.userId, isDeleted: false });
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+  user.isDeleted = true;
+  await user.save();
+  return res.status(200).json({ message: "User deleted successfully" });
+};
+
+export const updatePassword = async (req, res) => {
+  const userId = req.userFound._id;
+  const { password } = req.body;
+  const user = await User.findById(userId);
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+
+  const hashedPasswordUpdate = bcrypt.hashSync(
+    password,
+    parseInt(process.env.saltingNumber, 10)
+  );
+  user.password = hashedPasswordUpdate;
+  const updatedPass = await user.save();
+  if (updatedPass) {
+    return res.status(200).json({
+      message: "password updated successfully",
+    });
+  }
+  return res.status(400).json({
+    message: "error updating password",
+  });
+};

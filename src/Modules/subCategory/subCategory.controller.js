@@ -12,6 +12,7 @@ import Brand from "../../../DB/Models/brand.model.js";
 
 import generateUniqueFileName from "../../Utils/generateUniqueString.js";
 import cloudinaryConnection from "../../Utils/cloudinary.js";
+import { ApiFeatures } from "../../Utils/apiFeatures.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -195,4 +196,60 @@ export const deleteSubCategory = async (req, res) => {
     return res.status(200).json({
       message: " subcategory Deleted Successfully",
     });
+};
+
+export const getSubCategory = async (req, res, next) => {
+  const { subCategoryId } = req.params;
+  const subCategory = await SubCategory.findById(subCategoryId);
+  if (!subCategory) {
+    return res.status(404).json({
+      message: "sub category not found",
+    });
+  } else {
+    return res.status(200).json({
+      message: "sub category found",
+      subCategory,
+    });
+  }
+};
+
+export const getSubCategoryWithBrands = async (req, res) => {
+  const { subCategoryId } = req.params;
+  const subCategories = await SubCategory.findOne({
+    _id: subCategoryId,
+  }).populate([
+    {
+      path: "Brands",
+    },
+  ]);
+  console.log(subCategories);
+  if (!subCategories) {
+    return res.status(204).json({
+      message: "no subCategories found",
+    });
+  }
+  return res.status(200).json({
+    message: "sub categories found",
+    subCategories,
+  });
+};
+
+export const getAllSubCategoryFeatures = async (req, res) => {
+  // Destructure query parameters
+  const { page, size, sort, ...searchOptions } = req.query;
+
+  // Apply pagination and filter based on search options
+  const apiFeatures = new ApiFeatures(req.query, SubCategory.find())
+    .pagination({
+      page,
+      size,
+    })
+    .filter(searchOptions)
+    .sort(sort);
+  // Log the page and size
+  console.log(page + "" + size + "getAll");
+
+  // Execute the query and return the subCategories
+  const subCategories = await apiFeatures.mongooseQuery;
+  return res.status(200).json({ subCategories });
 };

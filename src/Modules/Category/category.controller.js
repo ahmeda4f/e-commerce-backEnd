@@ -10,6 +10,7 @@ import cloudinaryConnection from "../../Utils/cloudinary.js";
 import Category from "../../../DB/Models/category.model.js";
 import SubCategory from "../../../DB/Models/subCategory.model.js";
 import Brand from "../../../DB/Models/brand.model.js";
+import { ApiFeatures } from "../../Utils/apiFeatures.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -53,8 +54,7 @@ export const addCategory = async (req, res, next) => {
     addedBy: _id,
   };
   req.folder = `${process.env.MAIN_FOLDER}/Categories/${folderId}`;
-  const x = 9;
-  x = 8;
+
   const categoryAdded = await Category.create(category);
 
   req.savedDocument = { model: Category, _id: categoryAdded._id };
@@ -180,4 +180,71 @@ export const deleteCategory = async (req, res, next) => {
   return res.status(200).json({
     message: " Category Deleted Successfully",
   });
+};
+
+export const getAllSubCategoriesForCategory = async (req, res) => {
+  const { categoryId } = req.params;
+  const categories = await Category.find({ _id: categoryId }).populate({
+    path: "subCategories",
+  });
+
+  if (!categories) {
+    return res.status(204).json({
+      message: "no categories found",
+    });
+  }
+  return res.status(200).json({
+    message: "categories found",
+    categories,
+  });
+};
+
+export const getCategory = async (req, res) => {
+  const { categoryId } = req.params;
+  const categories = await Category.findOne({ _id: categoryId });
+
+  if (!categories) {
+    return res.status(404).json({
+      message: "no categories found",
+    });
+  }
+  return res.status(200).json({
+    message: "category found",
+    categories,
+  });
+};
+
+export const getCategoryWithBrands = async (req, res) => {
+  const { categoryId } = req.params;
+  const category = await Category.findById(categoryId).populate("Brands");
+
+  if (!category) {
+    return res.status(204).json({
+      message: "no category found",
+    });
+  }
+  return res.status(200).json({
+    message: "category found",
+    category,
+  });
+};
+
+export const getAllCategoriesFeatures = async (req, res) => {
+  // Destructure query parameters
+  const { page, size, sort, ...searchOptions } = req.query;
+
+  // Apply pagination and filter based on search options
+  const apiFeatures = new ApiFeatures(req.query, Category.find())
+    .pagination({
+      page,
+      size,
+    })
+    .filter(searchOptions)
+    .sort(sort);
+  // Log the page and size
+  console.log(page + "" + size + "getAll");
+
+  // Execute the query and return the categories
+  const categories = await apiFeatures.mongooseQuery;
+  return res.status(200).json({ categories });
 };

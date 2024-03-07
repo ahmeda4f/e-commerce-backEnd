@@ -12,6 +12,7 @@ import Product from "../../../DB/Models/product.model.js";
 import { systemRoles } from "../../Utils/systemRoles.js";
 import generateUniqueFileName from "../../Utils/generateUniqueString.js";
 import cloudinaryConnection from "../../Utils/cloudinary.js";
+import { ApiFeatures } from "../../Utils/apiFeatures.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -74,8 +75,8 @@ export const addProduct = async (req, res) => {
 
   let images = [];
   for (const file of req.files) {
-    const sanitizedTitle = slugify(title, { replacement: "_", lower: true });
-    const tempFilePath = path.join(__dirname, sanitizedTitle);
+    // const sanitizedTitle = slugify(title, { replacement: "_", lower: true });
+    const tempFilePath = path.join(__dirname, `${title}`);
     await writeFile(tempFilePath, file.buffer);
 
     const folder = brandFound.image.public_id.split(
@@ -208,4 +209,46 @@ export const updateProduct = async (req, res) => {
     message: "successfully updated product",
     productUpdated,
   });
+};
+
+/**
+ * Retrieves all products based on the specified query parameters.
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ */
+export const getAllProductsFeatures = async (req, res) => {
+  // Destructure query parameters
+  const { page, size, sort, ...searchOptions } = req.query;
+
+  // Apply pagination and filter based on search options
+  const apiFeatures = new ApiFeatures(req.query, Product.find())
+    .pagination({
+      page,
+      size,
+    })
+    .filter(searchOptions)
+    .sort(sort);
+  // Log the page and size
+  console.log(page + "" + size + "getAll");
+
+  // Execute the query and return the products
+  const products = await apiFeatures.mongooseQuery;
+  return res.status(200).json({ products });
+};
+
+export const deleteProduct = async (req, res) => {
+  const { productId } = req.params;
+  const productFound = await Product.findOne({ _id: productId });
+  if (!productFound) {
+    return res.status(404).json({
+      message: "Product not found",
+    });
+  } else {
+    const deleteProduct = await Product.deleteOne({ _id: productId });
+    if (deleteProduct) {
+      return res.status(204).json({
+        message: "Product deleted successfully",
+      });
+    }
+  }
 };

@@ -9,12 +9,15 @@ import { allowedExtensions } from "../../Utils/allowedExtensions.js";
 import {
   addProduct,
   getAllProducts,
+  getAllProductsFeatures,
   updateProduct,
 } from "./product.controller.js";
 
 const router = Router();
 
 router.get("/allProducts", getAllProducts);
+
+router.get("/allProductsFeatures", getAllProductsFeatures);
 
 router.post(
   "/addProduct",

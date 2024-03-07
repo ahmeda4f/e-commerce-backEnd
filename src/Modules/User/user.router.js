@@ -9,6 +9,8 @@ import {
   deleteUser,
   getAccountData,
   login,
+  softDelete,
+  updatePassword,
   updateUser,
   verifyEmail,
 } from "./user.controller.js";
@@ -36,6 +38,17 @@ router.delete(
   "/deleteAccount",
   authorization([systemRoles.User, systemRoles.superAdmin]),
   expressAsyncHandler(deleteUser)
+);
+router.delete(
+  "/softDelete/:userId",
+  authorization([systemRoles.User, systemRoles.superAdmin]),
+  expressAsyncHandler(softDelete)
+);
+
+router.put(
+  "/updatePassword",
+  authorization(systemRoles.User),
+  expressAsyncHandler(updatePassword)
 );
 
 export default router;

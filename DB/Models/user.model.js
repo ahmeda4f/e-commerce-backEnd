@@ -42,7 +42,12 @@ const userSchema = new mongoose.Schema(
     ],
     role: {
       type: String,
-      enum: [systemRoles.User, systemRoles.Admin, systemRoles.superAdmin],
+      enum: [
+        systemRoles.User,
+        systemRoles.Admin,
+        systemRoles.superAdmin,
+        systemRoles.Delivery,
+      ],
       default: systemRoles.User,
     },
     isEmailVerified: {
@@ -57,6 +62,10 @@ const userSchema = new mongoose.Schema(
       type: Number,
       min: 13,
       max: 90,
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false,
     },
   },
   {
