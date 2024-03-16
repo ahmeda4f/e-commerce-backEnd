@@ -86,7 +86,7 @@ export const addBrand = async (req, res, next) => {
   }
   return res.status(200).json({
     message: "brand added successfully",
-    category: newBrand,
+    brand: newBrand,
   });
 };
 

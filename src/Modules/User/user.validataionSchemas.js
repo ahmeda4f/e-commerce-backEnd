@@ -9,34 +9,31 @@ const idVlidation = (value, helper) => {
 
 export const signUpSchema = {
   body: Joi.object({
-    firstName: Joi.string().min(2).max(15).required().messages({
-      "string.min": "first name must be at least 2 characters",
-      "string.max": "first name must be at most 15 character",
+    userName: Joi.string().min(2).max(15).required().messages({
+      "string.min": "user name must be at least 2 characters",
+      "string.max": "user name must be at most 15 character",
     }),
-    lastName: Joi.string().min(2).max(15).required().messages({
-      "string.min": "last name must be at least 2 characters",
-      "string.max": "last name must be at most 15 character",
-    }),
-    companyId: Joi.string().custom(idVlidation).required(),
-    email: Joi.string()
-      .email({ tlds: { allow: ["com", "yahoo", "org"] } })
-      .required(),
-    recoveryEmail: Joi.string()
-      .email({ tlds: { allow: ["com", "yahoo", "org"] } })
-      .required(),
+    email: Joi.string().email().required(),
     password: Joi.string().required(),
-    DOB: Joi.date().required(),
+    age: Joi.number().min(16).max(100).required(),
     phoneNumber: Joi.string(),
-    role: Joi.string().valid(systemRoles.User, systemRoles.CompanyHr).messages({
-      "any.only": "Role must be either user or companyHr",
-    }),
+    address: Joi.string().required(),
+    role: Joi.string()
+      .valid(
+        systemRoles.User,
+        systemRoles.Admin,
+        systemRoles.superAdmin,
+        systemRoles.Delivery
+      )
+      .messages({
+        "any.only": "Role must be admin or superadmin or delivery or user",
+      }),
   }),
 };
 
 export const loginSchema = {
   body: Joi.object({
-    email: Joi.string().email({ tlds: { allow: ["com", "yahoo", "org"] } }),
-    phoneNumber: Joi.string(),
+    email: Joi.string().email().required(),
     password: Joi.string().required(),
   }),
 };
@@ -53,29 +50,27 @@ export const changePasswordSchema = {
 };
 
 export const updateUserSchema = {
-  headers: Joi.object({
-    token: Joi.string().regex(
-      /^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_.+/=]*$/
-    ),
-  }),
+  headers: Joi.object({}),
   body: Joi.object({
-    firstName: Joi.string().min(2).max(7).alphanum().messages({
-      "string.min": "your first name must be at least 2 characters",
-      "string.max": "your first name must be at most 7 characters",
+    userName: Joi.string().min(2).max(15).alphanum().messages({
+      "string.min": "your user Name must be at least 2 characters",
+      "string.max": "your user Name must be at most 15 characters",
     }),
-    lastName: Joi.string().min(2).max(8).alphanum().messages({
-      "string.min": "your last name must be at least 2 characters",
-      "string.max": "your first name must be at most 8 characters",
-    }),
-    companyId: Joi.string().custom(idVlidation),
-    DOB: Joi.date(),
-    email: Joi.string().email({ tlds: { allow: ["com", "yahoo", "org"] } }),
-
-    recoveryEmail: Joi.string().email({
-      tlds: { allow: ["com", "yahoo", "org"] },
-    }),
-
+    age: Joi.number().min(16).max(100),
+    email: Joi.string().email(),
     phoneNumber: Joi.string(),
+    password: Joi.string(),
+    address: Joi.string(),
+    role: Joi.string()
+      .valid(
+        systemRoles.User,
+        systemRoles.Admin,
+        systemRoles.superAdmin,
+        systemRoles.Delivery
+      )
+      .messages({
+        "any.only": "Role must be admin or superadmin or delivery or user",
+      }),
   }),
 };
 
@@ -93,10 +88,50 @@ export const idInParamsSchema = {
   }),
 };
 
-export const emailInParamsSchema = {
-  params: Joi.object({
-    recoveryEmail: Joi.string()
+export const idInBodychema = {
+  body: Joi.object({
+    id: Joi.string().custom(idVlidation).required(),
+  }),
+};
+export const emailInBodySchema = {
+  body: Joi.object({
+    email: Joi.string()
       .email({ tlds: { allow: ["com", "yahoo", "org"] } })
       .required(),
+  }),
+};
+
+export const tokenInBodySchema = {
+  body: Joi.object({
+    token: Joi.string().regex(
+      /^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_.+/=]*$/
+    ),
+  }),
+};
+
+export const refreshTokenInBodySchema = {
+  body: Joi.object({
+    refreshToken: Joi.string().regex(
+      /^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_.+/=]*$/
+    ),
+  }),
+};
+
+export const resetPasswordSchema = {
+  body: Joi.object({
+    password: Joi.string().required(),
+    confirmPassword: Joi.string().required().valid(Joi.ref("password")),
+    otp: Joi.number().required(),
+  }),
+};
+
+export const softDeleteSchema = {
+  params: Joi.object({
+    userId: Joi.string().custom(idVlidation).required(),
+  }),
+  headers: Joi.object({
+    token: Joi.string().regex(
+      /^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_.+/=]*$/
+    ),
   }),
 };

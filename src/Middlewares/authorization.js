@@ -10,13 +10,15 @@ export const authorization = (accessRoles) => {
           message: "please login first",
         });
       }
-      const decoded = jsonwebtoken.verify(token, "secret");
-      if (!decoded || !decoded.id) {
+      console.log(token);
+      const decoded = jsonwebtoken.verify(token, process.env.SECRET);
+      console.log(decoded);
+      if (!decoded || !decoded.email) {
         return res.status(400).json({
           message: "Invalid token payload",
         });
       }
-      const userFound = await User.findOne({ _id: decoded.id });
+      const userFound = await User.findOne({ email: decoded.email });
       if (!userFound) {
         return res.status(404).json({
           message: " no user found",
@@ -27,6 +29,7 @@ export const authorization = (accessRoles) => {
           message: "user not authorized to do that action",
         });
       }
+
       req.userFound = userFound;
       next();
     } catch (err) {

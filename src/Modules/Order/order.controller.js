@@ -16,6 +16,10 @@ import {
   createStripeCoupon,
   refundPaymentIntent,
 } from "../../paymentHandler/stripe.js";
+import easyinvoice from "easyinvoice";
+import fs from "fs";
+import User from "../../../DB/Models/user.model.js";
+import nodemailer from "nodemailer";
 
 export const createOrder = async (req, res) => {
   const {
@@ -388,5 +392,106 @@ export const cancelOrder = async (req, res, next) => {
     return res
       .status(200)
       .json({ message: "Order cancelled successfully", order });
+  }
+};
+
+export const generateInvoices = async (req, res, next) => {
+  const { orderId } = req.params;
+
+  try {
+    const order = await Order.findOne({ _id: orderId });
+
+    if (!order) {
+      return res.status(404).json({
+        message: "Order not found",
+      });
+    }
+
+    let productsArr = [];
+    for (const product of order.orderItems) {
+      const productData = {
+        title: product.title,
+        description: product.description,
+        quantity: product.quantity,
+        price: product.price,
+      };
+
+      productsArr.push(productData);
+    }
+
+    const user = await User.findOne({ _id: order.user });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    let data = {
+      client: {
+        address: user.address,
+      },
+      sender: {
+        company: "a4f e-commerce",
+        city: "Cairo",
+        country: "Egypt",
+      },
+      images: {
+        logo: "https://public.easyinvoice.cloud/img/logo_en_original.png",
+      },
+      information: {
+        date: DateTime.now().toFormat("yyyy-MM-dd"),
+      },
+      products: productsArr,
+
+      price: order.shippingPrice,
+      bottomNotice: "Kindly pay your invoice within 14 days.",
+      settings: {
+        currency: "EGP",
+        "margin-top": 20,
+        "margin-right": 20,
+        "margin-left": 20,
+        "margin-bottom": 20,
+        format: "A3",
+        height: "950px",
+        width: "450px",
+        orientation: "landscape",
+      },
+
+      customize: {},
+    };
+
+    easyinvoice.createInvoice(data, async function (result) {
+      const pdfBuffer = Buffer.from(result.pdf, "base64");
+
+      const transporter = nodemailer.createTransport({
+        service: "Gmail",
+        auth: {
+          user: process.env.EMAIL,
+          pass: process.env.PASSWORD,
+        },
+      });
+
+      const mailOptions = {
+        from: process.env.EMAIL,
+        to: user.email,
+        subject: "Invoice",
+        text: "Your Invoice",
+        attachments: [
+          {
+            filename: "invoice.pdf",
+            content: pdfBuffer,
+            encoding: "base64",
+          },
+        ],
+      };
+
+      await transporter.sendMail(mailOptions);
+
+      fs.writeFileSync("invoice.pdf", result.pdf, "base64");
+      res.status(200).json({
+        message: "Invoice sent successfully",
+      });
+    });
+  } catch (error) {
+    next(error);
   }
 };

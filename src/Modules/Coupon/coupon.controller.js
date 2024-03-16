@@ -192,8 +192,14 @@ export const updateCoupon = async (req, res) => {
       couponExist.toDate = toDate;
       couponExist.couponStatus = "valid";
     }
-    if (isFixed) couponExist.isFixed = isFixed;
-    if (isPercentage) couponExist.isPercentage = isPercentage;
+    if (isFixed == true) {
+      couponExist.isFixed = true;
+      couponExist.isPercentage = false;
+    }
+    if (isPercentage == true) {
+      couponExist.isPercentage = true;
+      couponExist.isFixed = false;
+    }
 
     couponExist.updatedBy = updatedBy;
     let users;

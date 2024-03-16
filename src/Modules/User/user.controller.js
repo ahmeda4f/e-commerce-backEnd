@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import User from "../../../DB/Models/user.model.js";
 import sendEmailService from "../../services/send-email-service.js";
 import jsonwebtoken from "jsonwebtoken";
+import nodemailer from "nodemailer";
 
 export const addUser = async (req, res) => {
   const { userName, email, password, phoneNumber, address, role, age } =
@@ -15,12 +16,15 @@ export const addUser = async (req, res) => {
     });
   }
 
-  const userToken = jsonwebtoken.sign({ email }, "secret");
+  const token = jsonwebtoken.sign({ email }, process.env.SECRET, {
+    expiresIn: "60s",
+  });
+
   const isEmailSent = await sendEmailService({
     to: email,
     subject: "Email Verification",
     message: `<h2>please click on this link to verify your email</h2>
-    <a href="http://localhost:3700/verifyEmail?token=${userToken}">verify email</a>
+    <a href="http://localhost:3700/verifyEmail?token=${token}">verify email</a>
     `,
   });
   if (!isEmailSent) {
@@ -51,10 +55,11 @@ export const addUser = async (req, res) => {
     user: newUser,
   });
 };
+
 export const verifyEmail = async (req, res) => {
   console.log("here");
   const { token } = req.query;
-  const decoded = jsonwebtoken.verify(token, "secret");
+  const decoded = jsonwebtoken.verify(token, process.env.SECRET);
   const user = await User.findOneAndUpdate(
     { email: decoded.email, isEmailVerified: false },
     { isEmailVerified: true },
@@ -92,17 +97,52 @@ export const login = async (req, res, next) => {
   if (passwordCorrect) {
     const token = jsonwebtoken.sign(
       {
-        id: user._id,
-        userEmail: user.email,
+        email,
       },
-      "secret"
+      process.env.SECRET,
+      { expiresIn: "60s" }
     );
+    const refreshToken = await jsonwebtoken.sign(
+      { email },
+      process.env.SECRET,
+      {
+        expiresIn: "1y",
+      }
+    );
+    refreshTokens.push(refreshToken);
     user.isLoggedIn = true;
     await user.save();
-    return res.status(200).json({ message: "Login successful", token });
+    return res
+      .status(200)
+      .json({ message: "Login successful", token, refreshToken });
   } else {
     return res.status(401).json({ message: "Invalid credentials" });
   }
+};
+
+let refreshTokens = [];
+export const generateAccessToken = async (req, res) => {
+  const { refreshToken } = req.body;
+  if (!refreshToken) {
+    return res.status(400).json({
+      message: "Refresh token is required",
+    });
+  }
+  if (!refreshTokens.includes(refreshToken)) {
+    return res.status(401).json({
+      message: "Invalid refresh token",
+    });
+  }
+  console.log(refreshTokens);
+  const decoded = jsonwebtoken.verify(refreshToken, process.env.SECRET);
+  const token = jsonwebtoken.sign(
+    {
+      email: decoded.email,
+    },
+    process.env.SECRET,
+    { expiresIn: "60s" }
+  );
+  return res.status(200).json({ token });
 };
 
 export const getAccountData = async (req, res) => {
@@ -203,5 +243,76 @@ export const updatePassword = async (req, res) => {
   }
   return res.status(400).json({
     message: "error updating password",
+  });
+};
+
+export const forgotPassword = async (req, res, next) => {
+  if (!req.body.email) {
+    return res.status(400).json({ message: "Email is required" });
+  }
+
+  const user = await User.findOne({ email: req.body.email });
+
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+
+  const otp = Math.floor(1000 + Math.random() * 9000);
+  const otpExpire = new Date();
+  otpExpire.setMinutes(otpExpire.getMinutes() + 2);
+
+  await User.updateOne({ email: req.body.email }, { $set: { otp, otpExpire } });
+
+  const transporter = nodemailer.createTransport({
+    service: "Gmail",
+    auth: {
+      user: process.env.EMAIL,
+      pass: process.env.PASSWORD,
+    },
+  });
+
+  const mailOptions = {
+    from: process.env.EMAIL,
+    to: req.body.email,
+    subject: "Password reset OTP",
+    text: `Your OTP . It expires after 2 minutes : ${otp}`,
+  };
+
+  await transporter.sendMail(mailOptions);
+
+  res.json({
+    data: "Your OTP has been sent to the email",
+  });
+};
+
+export const resetPassword = async (req, res, next) => {
+  const { password, confirmPassword, otp } = req.body;
+  if (!otp || !password || !confirmPassword) {
+    return res
+      .status(400)
+      .json({ message: "otp, password and confirmPassword are required" });
+  }
+
+  if (password !== confirmPassword) {
+    return res.status(400).json({ message: "Passwords doesn't match" });
+  }
+
+  const user = await User.findOne({
+    otp,
+    otpExpire: { $gt: new Date() },
+  });
+
+  if (!user) {
+    return res.status(400).json({ message: "Invalid or expired OTP" });
+  }
+  const hashedPasswordUpdate = bcrypt.hashSync(password, 10);
+
+  user.password = hashedPasswordUpdate;
+  user.otp = null;
+  user.otpExpire = null;
+  await user.save();
+
+  res.json({
+    data: "Password reset successfully",
   });
 };

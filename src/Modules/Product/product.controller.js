@@ -1,6 +1,7 @@
 import fs from "fs";
 import util from "util";
 import path from "path";
+import os from "os";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 
@@ -71,12 +72,14 @@ export const addProduct = async (req, res) => {
   const appliedPrice = basePrice - basePrice * ((discount || 0) / 100);
 
   const writeFile = util.promisify(fs.writeFile);
+  const tempDirectory = os.tmpdir();
+
   const folderId = generateUniqueFileName(4);
 
   let images = [];
   for (const file of req.files) {
-    // const sanitizedTitle = slugify(title, { replacement: "_", lower: true });
-    const tempFilePath = path.join(__dirname, `${title}`);
+    const sanitizedTitle = slugify(title, { replacement: "_", lower: true });
+    const tempFilePath = path.join(tempDirectory, sanitizedTitle);
     await writeFile(tempFilePath, file.buffer);
 
     const folder = brandFound.image.public_id.split(

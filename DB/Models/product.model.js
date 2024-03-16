@@ -86,6 +86,16 @@ const productSchema = new mongoose.Schema(
       type: Map,
       of: [String | Number],
     },
+    totalRate: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    totalUsersRated: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
   },
   {
     timestamps: true,

@@ -13,17 +13,27 @@ import {
   getAllBrandsFeatures,
   updateBrand,
 } from "./brand.controller.js";
+import { validationHandler } from "../../Middlewares/validation.js";
+import {
+  addBrandSchema,
+  deleteBrandSchema,
+  updateBrandSchema,
+} from "./brand.validationSchemas.js";
+import { tokenInHeadersSchema } from "../User/user.validataionSchemas.js";
 
 const router = Router();
 
 router.post(
   "/addBrand",
+  validationHandler(addBrandSchema),
   authorization(systemRoles.Admin),
   multerMiddleHost({ extensions: allowedExtensions.image }).single("image"),
   expressAsyncHandler(addBrand)
 );
+
 router.put(
   "/updateBrand/:brandId",
+  validationHandler(updateBrandSchema),
   authorization(systemRoles.Admin),
   multerMiddleHost({ extensions: allowedExtensions.image }).single("image"),
   expressAsyncHandler(updateBrand)
@@ -31,11 +41,13 @@ router.put(
 
 router.get(
   "/getAllBrands",
+  validationHandler(tokenInHeadersSchema),
   authorization([systemRoles.Admin, systemRoles.superAdmin]),
   expressAsyncHandler(getAllBrands)
 );
 router.delete(
   "/deleteBrand/:brandId",
+  validationHandler(deleteBrandSchema),
   authorization([systemRoles.superAdmin, systemRoles.Admin]),
   expressAsyncHandler(deleteBrand)
 );
